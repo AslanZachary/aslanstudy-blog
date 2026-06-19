@@ -9,10 +9,10 @@ const { translate: t } = Astro.locals
       <span class="i-mdi-close w-5 h-5"></span>
     </button>
     <h2 class="modal-title">{t('donate')}</h2>
-    <p class="donate-desc">如果我的文章对你有所启发，欢迎投币支持。你的鼓励是我持续写作的动力。</p>
-    <div class="donate-qr">
-      <p class="donate-placeholder">请将赞赏二维码放在<br/><code>public/donate-qr.png</code></p>
-    </div>
+    <p class="donate-desc">如果我的文章对你有所启发，欢迎请我喝杯咖啡。你的鼓励是我持续写作的动力。</p>
+    <a href="https://buymeacoffee.com/aslanzachary" target="_blank" class="donate-link">
+      ☕ 前往 Buy Me a Coffee
+    </a>
   </div>
 </dialog>
 
@@ -59,13 +59,18 @@ const { translate: t } = Astro.locals
     line-height: 1.7;
     margin: 0 0 1.5rem;
   }
-  .donate-placeholder {
-    font-size: .8rem;
-    opacity: .4;
-    padding: 2rem;
-    border: 2px dashed rgba(128,128,128,.2);
+  .donate-link {
+    display: inline-block;
+    padding: .75rem 2rem;
+    background: #ff813f;
+    color: #fff;
     border-radius: .5rem;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: opacity .15s;
   }
+  .donate-link:hover { opacity: .85; }
 
   @keyframes modal-in {
     from { opacity: 0; transform: translateY(1rem) scale(.97); }
