@@ -1,7 +1,34 @@
 import type { APIRoute } from 'astro'
-import { addMessage, getMessages } from '~/utils/storage'
+import { addMessage, getMessages, deleteMessage } from '~/utils/storage'
 
-export const GET: APIRoute = async () => {
+const ADMIN_KEY = import.meta.env.ADMIN_KEY || 'admin123'
+
+function isAdmin(request: Request): boolean {
+  const url = new URL(request.url)
+  const key = url.searchParams.get('key') || request.headers.get('x-admin-key') || ''
+  return key === ADMIN_KEY
+}
+
+// GET — public messages (no auth needed)
+export const GET: APIRoute = async ({ request }) => {
+  // If admin key present, return ALL messages
+  if (isAdmin(request)) {
+    try {
+      const all = await getMessages()
+      all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      return new Response(JSON.stringify(all), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    } catch (err) {
+      return new Response(JSON.stringify({ error: 'Internal server error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
+  // Public only
   try {
     const all = await getMessages()
     const publicMessages = all
@@ -20,6 +47,31 @@ export const GET: APIRoute = async () => {
       headers: { 'Content-Type': 'application/json' },
     })
   }
+}
+
+// DELETE — admin only
+export const DELETE: APIRoute = async ({ request }) => {
+  if (!isAdmin(request)) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const url = new URL(request.url)
+  const id = url.searchParams.get('id')
+  if (!id) {
+    return new Response(JSON.stringify({ error: 'Missing id' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  const deleted = await deleteMessage(id)
+  return new Response(JSON.stringify({ success: deleted }), {
+    status: deleted ? 200 : 404,
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 export const POST: APIRoute = async ({ request }) => {

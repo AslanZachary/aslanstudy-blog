@@ -45,7 +45,28 @@ export async function getMessages(): Promise<Message[]> {
   if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
     return await kvGetAll<Message>('messages')
   }
-  return memoryStore.messages
+  return memoryStore.messages as Message[]
+}
+
+export async function deleteMessage(id: string): Promise<boolean> {
+  if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
+    const all = await kvGetAll<Message>('messages')
+    const filtered = all.filter(m => m.id !== id)
+    if (filtered.length === all.length) return false
+    await fetch(`${import.meta.env.KV_REST_API_URL}/set/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${import.meta.env.KV_REST_API_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(filtered),
+    })
+    return true
+  }
+  const idx = memoryStore.messages.findIndex((m: any) => m.id === id)
+  if (idx === -1) return false
+  memoryStore.messages.splice(idx, 1)
+  return true
 }
 
 export async function addSubscriber(email: string): Promise<Subscriber> {
