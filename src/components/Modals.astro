@@ -1,0 +1,244 @@
+---
+// Modals.astro — Reusable modal forms for private message, comment, and email subscribe
+const { translate: t } = Astro.locals
+---
+
+<!-- Private Message Modal -->
+<dialog id="modal-message" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="document.getElementById('modal-message').close()" aria-label="Close">
+      <span class="i-mdi-close w-5 h-5"></span>
+    </button>
+    <h2 class="modal-title">{t('private_message')}</h2>
+    <form id="form-message" class="modal-form">
+      <label>
+        <span>{t('name')} <small>({t('optional')})</small></span>
+        <input type="text" name="name" placeholder="Your name" />
+      </label>
+      <label>
+        <span>{t('contact')} <small>({t('optional')})</small></span>
+        <input type="text" name="contact" placeholder="Email or other contact" />
+      </label>
+      <label>
+        <span>{t('message')}</span>
+        <textarea name="message" rows="5" required placeholder="Your message..."></textarea>
+      </label>
+      <button type="submit" class="btn-primary">{t('send')}</button>
+      <p class="form-note">消息不会公开显示，仅作者可见。</p>
+    </form>
+    <div id="message-success" class="success-message hidden">
+      <span class="i-mdi-check-circle w-8 h-8 text-green"></span>
+      <p>{t('message_sent')}</p>
+      <small>{t('message_thanks')}</small>
+    </div>
+  </div>
+</dialog>
+
+<!-- Comment Modal -->
+<dialog id="modal-comment" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="document.getElementById('modal-comment').close()" aria-label="Close">
+      <span class="i-mdi-close w-5 h-5"></span>
+    </button>
+    <h2 class="modal-title">{t('comment')}</h2>
+    <form id="form-comment" class="modal-form">
+      <label>
+        <span>{t('name')} <small>({t('optional')})</small></span>
+        <input type="text" name="name" placeholder="Your name" />
+      </label>
+      <label>
+        <span>{t('contact')} <small>({t('optional')})</small></span>
+        <input type="text" name="contact" placeholder="Email or other contact" />
+      </label>
+      <label>
+        <span>{t('message')}</span>
+        <textarea name="message" rows="5" required placeholder="Your comment..."></textarea>
+      </label>
+      <button type="submit" class="btn-primary">{t('send')}</button>
+      <p class="form-note">评论不会公开显示，仅发送至作者后台。</p>
+    </form>
+    <div id="comment-success" class="success-message hidden">
+      <span class="i-mdi-check-circle w-8 h-8 text-green"></span>
+      <p>{t('message_sent')}</p>
+      <small>{t('message_thanks')}</small>
+    </div>
+  </div>
+</dialog>
+
+<!-- Email Subscribe Modal -->
+<dialog id="modal-subscribe" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="document.getElementById('modal-subscribe').close()" aria-label="Close">
+      <span class="i-mdi-close w-5 h-5"></span>
+    </button>
+    <h2 class="modal-title">{t('email_subscribe')}</h2>
+    <p class="subscribe-desc">{t('subscribe_desc')}</p>
+    <form id="form-subscribe" class="modal-form">
+      <label>
+        <span>{t('subscribe_email')}</span>
+        <input type="email" name="email" required placeholder="your@email.com" />
+      </label>
+      <button type="submit" class="btn-primary">{t('subscribe')}</button>
+    </form>
+    <div id="subscribe-success" class="success-message hidden">
+      <span class="i-mdi-check-circle w-8 h-8 text-green"></span>
+      <p>{t('subscribe_success')}</p>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .modal {
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0;
+    max-width: 460px;
+    width: 90vw;
+    background: var(--color-background, #fff);
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+    animation: modal-in .25s ease;
+    color: var(--color-primary, #2e405b);
+  }
+  .modal::backdrop {
+    background: rgba(0,0,0,.4);
+    backdrop-filter: blur(2px);
+  }
+  .modal-content {
+    padding: 2rem;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: .5;
+    transition: opacity .15s;
+    color: var(--color-primary, #2e405b);
+  }
+  .modal-close:hover { opacity: 1; }
+  .modal-title {
+    margin: 0 0 1.25rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+  .modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .modal-form label span {
+    display: block;
+    font-size: .875rem;
+    margin-bottom: .35rem;
+    font-weight: 500;
+  }
+  .modal-form label small {
+    opacity: .6;
+    font-weight: 400;
+  }
+  .modal-form input,
+  .modal-form textarea {
+    width: 100%;
+    padding: .6rem .75rem;
+    border: 1px solid rgba(128,128,128,.25);
+    border-radius: .5rem;
+    font-size: .95rem;
+    background: var(--color-background, #fff);
+    color: var(--color-primary, #2e405b);
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .modal-form input:focus,
+  .modal-form textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #2e405b);
+  }
+  .btn-primary {
+    padding: .65rem 1.5rem;
+    background: var(--color-primary, #2e405b);
+    color: var(--color-background, #fff);
+    border: none;
+    border-radius: .5rem;
+    font-size: .95rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity .15s;
+    align-self: flex-start;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .form-note {
+    font-size: .8rem;
+    opacity: .5;
+    margin: 0;
+  }
+  .subscribe-desc {
+    font-size: .875rem;
+    opacity: .7;
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+  }
+  .success-message {
+    text-align: center;
+    padding: 1rem 0;
+  }
+  .success-message p {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: .5rem 0 .25rem;
+  }
+  .success-message small {
+    opacity: .6;
+  }
+  .hidden { display: none; }
+  .text-green { color: #22c55e; }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(1rem) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>
+
+<script>
+  function setupModalForm(formId: string, successId: string, apiPath: string, extraFields?: (form: HTMLFormElement) => Record<string, string>) {
+    const form = document.getElementById(formId) as HTMLFormElement | null
+    const success = document.getElementById(successId)
+    if (!form || !success) return
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null
+      if (btn) { btn.disabled = true; btn.textContent = '...' }
+
+      const data = new FormData(form)
+      const body: Record<string, string> = {}
+      data.forEach((v, k) => { body[k] = v.toString() })
+      if (extraFields) Object.assign(body, extraFields(form))
+
+      try {
+        const res = await fetch(apiPath, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (res.ok) {
+          form.classList.add('hidden')
+          success.classList.remove('hidden')
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = '发送' }
+          alert('发送失败，请稍后重试。')
+        }
+      } catch {
+        if (btn) { btn.disabled = false; btn.textContent = '发送' }
+        alert('网络错误，请稍后重试。')
+      }
+    })
+  }
+
+  // Initialize all forms
+  setupModalForm('form-message', 'message-success', '/api/message', () => ({ type: 'message' }))
+  setupModalForm('form-comment', 'comment-success', '/api/message', () => ({ type: 'comment' }))
+  setupModalForm('form-subscribe', 'subscribe-success', '/api/subscribe')
+</script>

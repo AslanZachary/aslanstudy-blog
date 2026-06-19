@@ -7,6 +7,9 @@ import SiteSeo from '~/components/SiteSeo.astro'
 import LaTeX from '~/components/LaTeX.astro'
 import Analytics from '~/components/Analytics.astro'
 import ThemeScript from '~/components/ThemeScript.astro'
+import Modals from '~/components/Modals.astro'
+import Search from '~/components/Search.astro'
+import Donation from '~/components/Donation.astro'
 import '~/styles/global.css'
 
 const lang = themeConfig.appearance.locale ?? 'en-us'
@@ -42,6 +45,11 @@ const dark = themeConfig.appearance.theme === 'dark'
     <footer class="transition-swup-footer py-7.5" lg="row-2-3 col-2-3">
       <SiteFooter />
     </footer>
+
+    <!-- Modal overlays -->
+    <Modals />
+    <Search />
+    <Donation />
 
     <script>
       document.addEventListener('animationend', removeAnimation, false)

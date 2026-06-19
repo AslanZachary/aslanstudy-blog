@@ -1,0 +1,236 @@
+---
+// Search.astro — Client-side fuzzy search for blog posts
+import { getPosts } from '~/utils'
+
+const { translate: t } = Astro.locals
+
+// Get all posts and serialize for client-side search
+const allPosts = await getPosts(true)
+const searchData = allPosts.map(p => ({
+  id: p.id,
+  title: p.data.title,
+  description: p.data.description || '',
+  categories: p.data.categories || [],
+  href: `/posts/${p.id}/`,
+  date: p.data.pubDate?.toISOString() || '',
+  bodyPreview: (p.body || '').slice(0, 800).replace(/[#*`~\[\]()>|\\]/g, ' ').replace(/\s+/g, ' '),
+}))
+const searchJson = JSON.stringify(searchData).replace(/</g, '\\u003c')
+---
+
+<dialog id="modal-search" class="modal">
+  <div class="modal-content">
+    <div class="search-header">
+      <span class="i-mdi-search w-5 h-5 search-icon"></span>
+      <input
+        type="text"
+        id="search-input"
+        class="search-input"
+        placeholder={t('search_placeholder')}
+        autocomplete="off"
+      />
+      <button class="modal-close" onclick="document.getElementById('modal-search').close()" aria-label="Close">
+        <span class="i-mdi-close w-5 h-5"></span>
+      </button>
+    </div>
+    <div id="search-results" class="search-results">
+      <p class="search-hint">{t('search_hint')}</p>
+    </div>
+  </div>
+</dialog>
+
+<!-- Data island for client-side search -->
+<script type="application/json" id="search-data">{searchJson}</script>
+
+<style>
+  .modal {
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0;
+    max-width: 560px;
+    width: 92vw;
+    background: var(--color-background, #fff);
+    box-shadow: 0 4px 32px rgba(0,0,0,.15);
+    animation: modal-in .2s ease;
+    color: var(--color-primary, #2e405b);
+  }
+  .modal::backdrop {
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(2px);
+  }
+  .modal-content { padding: 1.5rem; }
+  .search-header {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(128,128,128,.15);
+    margin-bottom: .5rem;
+  }
+  .search-icon { opacity: .4; flex-shrink: 0; }
+  .search-input {
+    flex: 1;
+    border: none;
+    font-size: 1.05rem;
+    background: transparent;
+    color: var(--color-primary, #2e405b);
+    font-family: inherit;
+    outline: none;
+  }
+  .search-input::placeholder { opacity: .4; }
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: .4;
+    color: var(--color-primary, #2e405b);
+    flex-shrink: 0;
+  }
+  .modal-close:hover { opacity: .7; }
+  .search-results {
+    max-height: 60vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .search-hint {
+    text-align: center;
+    opacity: .4;
+    padding: 1.5rem 0;
+    font-size: .9rem;
+  }
+  .search-result-item {
+    padding: .75rem;
+    border-radius: .5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background .1s;
+  }
+  .search-result-item:hover,
+  .search-result-item:focus {
+    background: rgba(128,128,128,.06);
+  }
+  .search-result-title {
+    font-weight: 600;
+    font-size: .95rem;
+    margin: 0 0 .2rem;
+  }
+  .search-result-excerpt {
+    font-size: .8rem;
+    opacity: .55;
+    margin: 0;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .search-result-category {
+    font-size: .7rem;
+    opacity: .4;
+    margin-top: .25rem;
+  }
+  .search-highlight { font-weight: 700; }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(.5rem) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>
+
+<script>
+  // Read data from data island
+  const dataEl = document.getElementById('search-data')
+  const POSTS: Array<{
+    id: string; title: string; description: string; categories: string[];
+    href: string; date: string; bodyPreview: string;
+  }> = dataEl ? JSON.parse(dataEl.textContent || '[]') : []
+
+  function normalize(s: string): string {
+    return s.toLowerCase().replace(/\s+/g, ' ').trim()
+  }
+
+  function highlight(text: string, query: string): string {
+    if (!query) return text
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`(${escaped})`, 'gi')
+    return text.replace(regex, '<mark class="search-highlight">$1</mark>')
+  }
+
+  function search(query: string) {
+    const q = normalize(query)
+    if (!q || q.length < 1) return []
+
+    const results: Array<{ item: typeof POSTS[0]; score: number }> = []
+
+    for (const post of POSTS) {
+      let score = 0
+      const title = normalize(post.title)
+      const desc = normalize(post.description)
+      const body = normalize(post.bodyPreview)
+      const cats = normalize(post.categories.join(' '))
+
+      if (title.includes(q)) score += 100
+      else score += fuzzyScore(title, q) * 0.5
+
+      if (cats.includes(q)) score += 40
+
+      if (desc.includes(q)) score += 30
+      else score += fuzzyScore(desc, q) * 0.2
+
+      if (body.includes(q)) score += 20
+      else score += fuzzyScore(body, q) * 0.1
+
+      if (score > 0) results.push({ item: post, score })
+    }
+
+    results.sort((a, b) => b.score - a.score)
+    return results.slice(0, 12).map(r => r.item)
+  }
+
+  function fuzzyScore(text: string, query: string): number {
+    let score = 0
+    let qi = 0
+    for (let i = 0; i < text.length && qi < query.length; i++) {
+      if (text[i] === query[qi]) { score += 1; qi++ }
+    }
+    return qi === query.length ? score : 0
+  }
+
+  const input = document.getElementById('search-input') as HTMLInputElement | null
+  const resultsDiv = document.getElementById('search-results')
+
+  if (input && resultsDiv) {
+    input.addEventListener('input', () => {
+      const q = normalize(input.value)
+      const hits = q ? search(q) : []
+
+      if (q.length === 0) {
+        resultsDiv.innerHTML = '<p class="search-hint">输入关键词搜索文章标题和内容</p>'
+        return
+      }
+
+      if (hits.length === 0) {
+        resultsDiv.innerHTML = '<p class="search-hint">未找到相关文章</p>'
+        return
+      }
+
+      resultsDiv.innerHTML = hits.map(post => `
+        <a href="${post.href}" class="search-result-item">
+          <p class="search-result-title">${highlight(post.title, q)}</p>
+          ${post.description ? `<p class="search-result-excerpt">${highlight(post.description, q)}</p>` : ''}
+          ${post.categories.length ? `<p class="search-result-category">${post.categories.join(' / ')}</p>` : ''}
+        </a>
+      `).join('')
+    })
+
+    const dialog = document.getElementById('modal-search') as HTMLDialogElement | null
+    if (dialog) {
+      dialog.addEventListener('toggle', () => {
+        if (dialog.open) { input.focus(); input.value = ''; resultsDiv.innerHTML = '<p class="search-hint">输入关键词搜索文章标题和内容</p>' }
+      })
+    }
+  }
+</script>

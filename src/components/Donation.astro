@@ -1,0 +1,74 @@
+---
+// Donation.astro — Simple donation/support button
+const { translate: t } = Astro.locals
+---
+
+<dialog id="modal-donate" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="document.getElementById('modal-donate').close()" aria-label="Close">
+      <span class="i-mdi-close w-5 h-5"></span>
+    </button>
+    <h2 class="modal-title">{t('donate')}</h2>
+    <p class="donate-desc">如果我的文章对你有所启发，欢迎投币支持。你的鼓励是我持续写作的动力。</p>
+    <div class="donate-qr">
+      <p class="donate-placeholder">请将赞赏二维码放在<br/><code>public/donate-qr.png</code></p>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .modal {
+    border: none;
+    border-radius: 0.75rem;
+    padding: 0;
+    max-width: 400px;
+    width: 90vw;
+    background: var(--color-background, #fff);
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+    animation: modal-in .25s ease;
+    color: var(--color-primary, #2e405b);
+  }
+  .modal::backdrop {
+    background: rgba(0,0,0,.4);
+    backdrop-filter: blur(2px);
+  }
+  .modal-content {
+    padding: 2rem;
+    position: relative;
+    text-align: center;
+  }
+  .modal-close {
+    position: absolute;
+    top: .75rem;
+    right: .75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: .4;
+    color: var(--color-primary, #2e405b);
+  }
+  .modal-close:hover { opacity: .7; }
+  .modal-title {
+    margin: 0 0 1rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+  .donate-desc {
+    font-size: .9rem;
+    opacity: .7;
+    line-height: 1.7;
+    margin: 0 0 1.5rem;
+  }
+  .donate-placeholder {
+    font-size: .8rem;
+    opacity: .4;
+    padding: 2rem;
+    border: 2px dashed rgba(128,128,128,.2);
+    border-radius: .5rem;
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: translateY(1rem) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+</style>

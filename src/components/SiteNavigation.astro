@@ -6,7 +6,7 @@ const { translate: t } = Astro.locals
 ---
 
 <nav class="text-center font-bold" flex="~ col gap-4">
-  <ul lg="flex-col items-start text-4" class="text-3.5" flex="~ row gap-2 justify-center">
+  <ul lg="flex-col items-start text-4" class="text-3.5" flex="~ row gap-2 justify-center wrap">
     {
       navLinks.map((nav) => (
         <li>
@@ -17,6 +17,37 @@ const { translate: t } = Astro.locals
       ))
     }
   </ul>
+
+  <!-- Secondary nav: search, modals, donation -->
+  <ul flex="~ row gap-2 justify-center wrap items-center" class="text-3.5">
+    <li>
+      <button class="nav-btn" onclick="document.getElementById('modal-search').showModal()" title={t('Search')} aria-label={t('Search')}>
+        <span class="i-mdi-search w-5 h-5"></span>
+      </button>
+    </li>
+    <li>
+      <button class="nav-btn" onclick="document.getElementById('modal-message').showModal()" title={t('private_message')} aria-label={t('private_message')}>
+        <span class="i-mdi-email-outline w-5 h-5"></span>
+      </button>
+    </li>
+    <li>
+      <button class="nav-btn" onclick="document.getElementById('modal-comment').showModal()" title={t('comment')} aria-label={t('comment')}>
+        <span class="i-mdi-comment-outline w-5 h-5"></span>
+      </button>
+    </li>
+    <li>
+      <button class="nav-btn" onclick="document.getElementById('modal-subscribe').showModal()" title={t('email_subscribe')} aria-label={t('email_subscribe')}>
+        <span class="i-mdi-email w-5 h-5"></span>
+      </button>
+    </li>
+    <li>
+      <button class="nav-btn" onclick="document.getElementById('modal-donate').showModal()" title={t('donate')} aria-label={t('donate')}>
+        <span class="i-mdi-heart-outline w-5 h-5"></span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Social links -->
   <ul flex="~ row gap-1 justify-center">
     {
       socialLinks.map(({ href, name }) => (
@@ -29,3 +60,16 @@ const { translate: t } = Astro.locals
     }
   </ul>
 </nav>
+
+<style>
+  .nav-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: .25rem .35rem;
+    opacity: .55;
+    transition: opacity .15s;
+    color: var(--color-primary, #2e405b);
+  }
+  .nav-btn:hover { opacity: 1; }
+</style>

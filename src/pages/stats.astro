@@ -1,0 +1,256 @@
+---
+import LayoutDefault from '~/layouts/LayoutDefault.astro'
+import { getPosts } from '~/utils'
+import { formatDate } from '~/utils'
+
+const { translate: t } = Astro.locals
+
+const posts = await getPosts(true)
+
+// Total post count
+const totalPosts = posts.length
+
+// Total word count (Chinese characters + English words)
+function countWords(text: string): number {
+  const chineseChars = (text.match(/[一-鿿㐀-䶿]/g) || []).length
+  const englishWords = (text.match(/[a-zA-Z]+/g) || []).length
+  return chineseChars + englishWords
+}
+const totalWords = posts.reduce((sum, p) => sum + countWords(p.body || ''), 0)
+
+// Category distribution
+const categoryMap = new Map<string, number>()
+for (const post of posts) {
+  for (const cat of post.data.categories || []) {
+    categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
+  }
+}
+const categories = Array.from(categoryMap.entries())
+  .sort((a, b) => b[1] - a[1])
+const totalCategories = categories.length
+
+// Monthly statistics
+const monthMap = new Map<string, number>()
+for (const post of posts) {
+  const key = formatDate(post.data.pubDate, 'YYYY-MM')
+  monthMap.set(key, (monthMap.get(key) || 0) + 1)
+}
+// Writing days (unique dates on which posts were published)
+const writingDays = new Set(
+  posts.map(p => formatDate(p.data.pubDate, 'YYYY-MM-DD'))
+).size
+
+// Average post length
+const avgWords = totalPosts > 0 ? Math.round(totalWords / totalPosts) : 0
+
+// Stats for the last 12 months
+const now = new Date()
+const last12Months: string[] = []
+for (let i = 11; i >= 0; i--) {
+  const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+  last12Months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+}
+const recentMonthlyData = last12Months.map(m => ({
+  month: m,
+  count: monthMap.get(m) || 0,
+}))
+const maxMonthlyCount = Math.max(...recentMonthlyData.map(d => d.count), 1)
+---
+
+<LayoutDefault>
+  <div flex="~ col gap-8">
+    <header>
+      <h1 class="post-title">{t('Stats')}</h1>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-number">{totalPosts}</span>
+        <span class="stat-label">{t('total_posts')}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">{totalWords.toLocaleString()}</span>
+        <span class="stat-label">{t('total_words')}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">{totalCategories}</span>
+        <span class="stat-label">{t('total_categories')}</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-number">{writingDays}</span>
+        <span class="stat-label">{t('writing_days')}</span>
+      </div>
+    </div>
+
+    <!-- Monthly Stats Bar Chart -->
+    <section>
+      <h2 class="section-title">{t('monthly_stats')}</h2>
+      <div class="chart-container">
+        {
+          recentMonthlyData.map(({ month, count }) => (
+            <div class="chart-bar-wrapper">
+              <span class="chart-value">{count > 0 ? count : ''}</span>
+              <div
+                class="chart-bar"
+                style={`height: ${count > 0 ? Math.max((count / maxMonthlyCount) * 160, 4) : 0}px`}
+              ></div>
+              <span class="chart-label">{month.slice(5)}月</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Category Distribution -->
+    <section>
+      <h2 class="section-title">{t('category_distribution')}</h2>
+      <div class="category-list" flex="~ col gap-3">
+        {
+          categories.map(([name, count]) => (
+            <div class="category-row">
+              <span class="category-name">{name}</span>
+              <div class="category-bar-bg">
+                <div
+                  class="category-bar-fill"
+                  style={`width: ${totalPosts > 0 ? (count / totalPosts) * 100 : 0}%`}
+                ></div>
+              </div>
+              <span class="category-count">{count}</span>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Post Frequency -->
+    <section>
+      <h2 class="section-title">{t('post_frequency')}</h2>
+      <p class="stats-summary">
+        平均每篇文章约 <strong>{avgWords.toLocaleString()}</strong> 字，共在 <strong>{writingDays}</strong> 个不同的日期发布过文章。
+      </p>
+    </section>
+  </div>
+</LayoutDefault>
+
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 15%, transparent);
+    border-radius: .75rem;
+    gap: .35rem;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    font-family: var(--font-header, serif);
+    line-height: 1;
+    color: var(--color-primary, #2e405b);
+  }
+
+  .stat-label {
+    font-size: .85rem;
+    opacity: .6;
+  }
+
+  .section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 1.25rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+  }
+
+  .chart-container {
+    display: flex;
+    align-items: flex-end;
+    gap: .5rem;
+    height: 200px;
+    padding-top: .5rem;
+  }
+
+  .chart-bar-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+  }
+
+  .chart-value {
+    font-size: .7rem;
+    opacity: .5;
+    margin-bottom: 2px;
+    min-height: 0;
+  }
+
+  .chart-bar {
+    width: 100%;
+    max-width: 32px;
+    background: var(--color-primary, #2e405b);
+    border-radius: 4px 4px 0 0;
+    opacity: .7;
+    transition: opacity .15s;
+    min-height: 0;
+  }
+
+  .chart-bar:hover { opacity: 1; }
+
+  .chart-label {
+    font-size: .7rem;
+    opacity: .5;
+    margin-top: 4px;
+  }
+
+  .category-row {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+
+  .category-name {
+    min-width: 80px;
+    font-weight: 500;
+    font-size: .9rem;
+  }
+
+  .category-bar-bg {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--color-primary, #2e405b) 10%, transparent);
+    overflow: hidden;
+  }
+
+  .category-bar-fill {
+    height: 100%;
+    background: var(--color-primary, #2e405b);
+    opacity: .6;
+    border-radius: 4px;
+    transition: width .4s ease;
+  }
+
+  .category-count {
+    font-size: .85rem;
+    opacity: .6;
+    min-width: 24px;
+    text-align: right;
+  }
+
+  .stats-summary {
+    font-size: .95rem;
+    opacity: .75;
+    line-height: 1.8;
+  }
+</style>
