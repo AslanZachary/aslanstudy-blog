@@ -23,8 +23,12 @@ const { translate: t } = Astro.locals
         <span>{t('message')}</span>
         <textarea name="message" rows="5" required placeholder="Your message..."></textarea>
       </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="public" />
+        <span class="checkbox-text">公开此留言，让其他访客也能看到</span>
+      </label>
       <button type="submit" class="btn-primary">{t('send')}</button>
-      <p class="form-note">消息不会公开显示，仅作者可见。</p>
+      <p class="form-note">公开留言会显示在<a href="/messageboard">留言板</a>；私密留言仅作者可见。</p>
     </form>
     <div id="message-success" class="success-message hidden">
       <span class="i-mdi-check-circle w-8 h-8 text-green"></span>
@@ -180,6 +184,28 @@ const { translate: t } = Astro.locals
     margin: 0 0 1.25rem;
     line-height: 1.6;
   }
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+  }
+  .checkbox-label input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-primary, #2e405b);
+    cursor: pointer;
+  }
+  .checkbox-text {
+    font-size: .85rem;
+    opacity: .7;
+    user-select: none;
+  }
+  .form-note a {
+    color: var(--color-primary, #2e405b);
+    opacity: .8;
+  }
+
   .success-message {
     text-align: center;
     padding: 1rem 0;
@@ -213,8 +239,14 @@ const { translate: t } = Astro.locals
       if (btn) { btn.disabled = true; btn.textContent = '...' }
 
       const data = new FormData(form)
-      const body: Record<string, string> = {}
-      data.forEach((v, k) => { body[k] = v.toString() })
+      const body: Record<string, string | boolean> = {}
+      data.forEach((v, k) => {
+        if (k === 'public') {
+          body[k] = true
+        } else {
+          body[k] = v.toString()
+        }
+      })
       if (extraFields) Object.assign(body, extraFields(form))
 
       try {

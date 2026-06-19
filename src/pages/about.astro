@@ -44,8 +44,12 @@ const { Content } = await render(aboutPost)
         <span class="about-label-text">{t('message')} <small>(必填)</small></span>
         <textarea name="message" class="about-textarea" rows="5" required placeholder="写下你想说的话..."></textarea>
       </label>
+      <label class="about-checkbox-label">
+        <input type="checkbox" name="public" class="about-checkbox" />
+        <span class="about-checkbox-text">公开此留言，让其他访客也能看到</span>
+      </label>
       <button type="submit" class="about-submit">{t('send')}</button>
-      <p class="about-form-note">消息不会公开显示，仅作者可见。</p>
+      <p class="about-form-note">公开留言会显示在<a href="/messageboard">留言板</a>；私密留言仅作者可见。</p>
     </form>
 
     <div id="about-success" class="about-success hidden">
@@ -147,6 +151,31 @@ const { Content } = await render(aboutPost)
     margin: 0;
   }
 
+  .about-form-note a {
+    color: var(--color-primary, #2e405b);
+    opacity: .8;
+  }
+
+  .about-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+  }
+
+  .about-checkbox {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--color-primary, #2e405b);
+    cursor: pointer;
+  }
+
+  .about-checkbox-text {
+    font-size: .85rem;
+    opacity: .7;
+    user-select: none;
+  }
+
   .about-success {
     text-align: center;
     padding: 2rem 0;
@@ -184,8 +213,14 @@ const { Content } = await render(aboutPost)
       if (btn) { btn.disabled = true; btn.textContent = '...' }
 
       const data = new FormData(form)
-      const body: Record<string, string> = { type: 'message' }
-      data.forEach((v, k) => { body[k] = v.toString() })
+      const body: Record<string, string | boolean> = { type: 'message' }
+      data.forEach((v, k) => {
+        if (k === 'public') {
+          body[k] = true // checkbox checked means public
+        } else {
+          body[k] = v.toString()
+        }
+      })
 
       try {
         const res = await fetch('/api/message', {

@@ -18,6 +18,7 @@ export const userConfig: Partial<UserConfig> = {
       { name: 'Archive', href: '/archive' },
       { name: 'Categories', href: '/categories' },
       { name: 'Stats', href: '/stats' },
+      { name: 'MessageBoard', href: '/messageboard' },
       { name: 'About', href: '/about' },
     ],
     categoryMap: [],

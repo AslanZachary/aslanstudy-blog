@@ -15,6 +15,7 @@ interface Message {
   contact: string
   message: string
   createdAt: string
+  public: boolean
 }
 
 function uid(): string {
