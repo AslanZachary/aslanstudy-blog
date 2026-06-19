@@ -24,4 +24,186 @@ const { Content } = await render(aboutPost)
   <article class="prose">
     <Content />
   </article>
+
+  <!-- Interaction Section -->
+  <section class="interaction-section">
+    <h2 class="interaction-title">留言互动</h2>
+    <p class="interaction-desc">欢迎在此留言，所有内容不会公开显示，仅作者可见。</p>
+
+    <!-- Inline Comment/Messsage Form -->
+    <form id="form-about-message" class="about-form">
+      <label class="about-label">
+        <span class="about-label-text">{t('name')} <small>({t('optional')})</small></span>
+        <input type="text" name="name" class="about-input" placeholder="你的昵称" />
+      </label>
+      <label class="about-label">
+        <span class="about-label-text">{t('contact')} <small>({t('optional')})</small></span>
+        <input type="text" name="contact" class="about-input" placeholder="邮箱或其他联系方式" />
+      </label>
+      <label class="about-label">
+        <span class="about-label-text">{t('message')} <small>(必填)</small></span>
+        <textarea name="message" class="about-textarea" rows="5" required placeholder="写下你想说的话..."></textarea>
+      </label>
+      <button type="submit" class="about-submit">{t('send')}</button>
+      <p class="about-form-note">消息不会公开显示，仅作者可见。</p>
+    </form>
+
+    <div id="about-success" class="about-success hidden">
+      <span class="i-mdi-check-circle success-icon"></span>
+      <p class="success-title">{t('message_sent')}</p>
+      <p class="success-sub">{t('message_thanks')}</p>
+    </div>
+  </section>
 </LayoutDefault>
+
+<style>
+  .interaction-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+  }
+
+  .interaction-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 .5rem;
+    color: var(--color-primary, #2e405b);
+  }
+
+  .interaction-desc {
+    font-size: .9rem;
+    opacity: .6;
+    margin: 0 0 1.75rem;
+    line-height: 1.6;
+  }
+
+  .about-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .about-label {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+  }
+
+  .about-label-text {
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--color-primary, #2e405b);
+  }
+
+  .about-label-text small {
+    opacity: .5;
+    font-weight: 400;
+  }
+
+  .about-input,
+  .about-textarea {
+    width: 100%;
+    padding: .65rem .85rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 20%, transparent);
+    border-radius: .5rem;
+    font-size: .95rem;
+    background: var(--color-background, #fff);
+    color: var(--color-primary, #2e405b);
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color .15s;
+  }
+
+  .about-input:focus,
+  .about-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #2e405b);
+  }
+
+  .about-textarea {
+    resize: vertical;
+    min-height: 100px;
+  }
+
+  .about-submit {
+    padding: .7rem 2rem;
+    background: var(--color-primary, #2e405b);
+    color: var(--color-background, #fff);
+    border: none;
+    border-radius: .5rem;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+    align-self: flex-start;
+  }
+
+  .about-submit:hover { opacity: .85; }
+  .about-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+  .about-form-note {
+    font-size: .8rem;
+    opacity: .45;
+    margin: 0;
+  }
+
+  .about-success {
+    text-align: center;
+    padding: 2rem 0;
+  }
+
+  .success-icon {
+    font-size: 2.5rem;
+    color: #22c55e;
+  }
+
+  .success-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: .5rem 0 .25rem;
+    color: var(--color-primary, #2e405b);
+  }
+
+  .success-sub {
+    font-size: .9rem;
+    opacity: .6;
+    margin: 0;
+  }
+
+  .hidden { display: none; }
+</style>
+
+<script>
+  const form = document.getElementById('form-about-message') as HTMLFormElement | null
+  const success = document.getElementById('about-success')
+
+  if (form && success) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const btn = form.querySelector('.about-submit') as HTMLButtonElement | null
+      if (btn) { btn.disabled = true; btn.textContent = '...' }
+
+      const data = new FormData(form)
+      const body: Record<string, string> = { type: 'message' }
+      data.forEach((v, k) => { body[k] = v.toString() })
+
+      try {
+        const res = await fetch('/api/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (res.ok) {
+          form.classList.add('hidden')
+          success.classList.remove('hidden')
+        } else {
+          if (btn) { btn.disabled = false; btn.textContent = '发送' }
+          alert('发送失败，请稍后重试。')
+        }
+      } catch {
+        if (btn) { btn.disabled = false; btn.textContent = '发送' }
+        alert('网络错误，请稍后重试。')
+      }
+    })
+  }
+</script>
