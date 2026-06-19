@@ -1,6 +1,8 @@
 import type { APIRoute } from 'astro'
 import { addMessage, getMessages, deleteMessage } from '~/utils/storage'
 
+export const prerender = false
+
 const ADMIN_KEY = import.meta.env.ADMIN_KEY || 'admin123'
 
 function isAdmin(request: Request): boolean {
