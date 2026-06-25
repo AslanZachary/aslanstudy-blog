@@ -10,7 +10,7 @@ export const userConfig: Partial<UserConfig> = {
     pageSize: 8,
     socialLinks: [
       { name: 'email', href: 'mailto:aslanzacharyx@gmail.com' },
-      { name: 'rss', href: '/atom.xml' },
+      { name: 'rss', href: '/rss' },
     ],
     navLinks: [
       { name: 'Home', href: '/' },
