@@ -35,6 +35,22 @@ function formatDateStr(iso: string): string {
           <span class="board-item-date"></span>
         </div>
         <p class="board-item-body"></p>
+        <button class="board-reply-btn">回复</button>
+        <div class="board-replies"></div>
+      </div>
+    </template>
+
+    <template id="reply-form-template">
+      <div class="reply-form-container">
+        <form class="reply-form">
+          <input type="text" name="reply-name" class="reply-input" placeholder="你的昵称（可选）" />
+          <textarea name="reply-message" class="reply-textarea" rows="3" required placeholder="写下你的回复..."></textarea>
+          <div class="reply-form-actions">
+            <button type="submit" class="reply-submit-btn">回复</button>
+            <button type="button" class="reply-cancel-btn">取消</button>
+          </div>
+          <p class="reply-form-error hidden"></p>
+        </form>
       </div>
     </template>
 
@@ -133,6 +149,100 @@ function formatDateStr(iso: string): string {
     background: color-mix(in srgb, var(--color-primary, #2e405b) 5%, transparent);
   }
 
+  /* Reply button */
+  .board-reply-btn {
+    margin-top: .6rem;
+    padding: .25rem .75rem;
+    background: transparent;
+    color: var(--color-primary, #2e405b);
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 25%, transparent);
+    border-radius: .35rem;
+    font-size: .75rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  .board-reply-btn:hover {
+    background: color-mix(in srgb, var(--color-primary, #2e405b) 6%, transparent);
+  }
+
+  /* Replies wrapper */
+  .board-replies {
+    margin-left: 2rem;
+    margin-top: .75rem;
+    padding-left: 1rem;
+    border-left: 2px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+  }
+  .board-replies:empty { display: none; }
+
+  /* Reply form */
+  .reply-form-container {
+    margin-top: .75rem;
+    margin-left: 2rem;
+    padding-left: 1rem;
+    border-left: 2px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+  }
+  .reply-form {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  .reply-input,
+  .reply-textarea {
+    width: 100%;
+    padding: .5rem .7rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 18%, transparent);
+    border-radius: .4rem;
+    font-size: .85rem;
+    background: var(--color-background, #fff);
+    color: var(--color-primary, #2e405b);
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .reply-input:focus,
+  .reply-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary, #2e405b);
+  }
+  .reply-textarea { resize: vertical; min-height: 60px; }
+  .reply-form-actions {
+    display: flex;
+    gap: .5rem;
+  }
+  .reply-submit-btn {
+    padding: .35rem 1rem;
+    background: var(--color-primary, #2e405b);
+    color: var(--color-background, #fff);
+    border: none;
+    border-radius: .35rem;
+    font-size: .8rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .reply-submit-btn:hover { opacity: .85; }
+  .reply-submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .reply-cancel-btn {
+    padding: .35rem 1rem;
+    background: transparent;
+    color: var(--color-primary, #2e405b);
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 20%, transparent);
+    border-radius: .35rem;
+    font-size: .8rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .reply-cancel-btn:hover {
+    background: color-mix(in srgb, var(--color-primary, #2e405b) 5%, transparent);
+  }
+  .reply-form-error {
+    color: #ef4444;
+    font-size: .75rem;
+    margin: 0;
+  }
+
   .hidden { display: none; }
 </style>
 
@@ -153,21 +263,24 @@ function formatDateStr(iso: string): string {
         return
       }
 
-      const template = document.getElementById('msg-template') as HTMLTemplateElement | null
-      if (!template) return
+      const msgTemplate = document.getElementById('msg-template') as HTMLTemplateElement | null
+      if (!msgTemplate) return
+
+      // Build tree: top-level and children map
+      const topLevel: any[] = []
+      const children: Record<string, any[]> = {}
+      for (const msg of messages) {
+        if (msg.parentId) {
+          if (!children[msg.parentId]) children[msg.parentId] = []
+          children[msg.parentId].push(msg)
+        } else {
+          topLevel.push(msg)
+        }
+      }
 
       const fragment = document.createDocumentFragment()
-
-      for (const msg of messages) {
-        const node = template.content.cloneNode(true) as DocumentFragment
-        const nameEl = node.querySelector('.board-item-name')
-        const dateEl = node.querySelector('.board-item-date')
-        const bodyEl = node.querySelector('.board-item-body')
-
-        if (nameEl) nameEl.textContent = msg.name || 'Anonymous'
-        if (dateEl) dateEl.textContent = new Date(msg.createdAt).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
-        if (bodyEl) bodyEl.textContent = msg.message
-
+      for (const msg of topLevel) {
+        const node = buildMessageNode(msg, msgTemplate, children[msg.id] || [])
         fragment.appendChild(node)
       }
 
@@ -178,6 +291,99 @@ function formatDateStr(iso: string): string {
     } catch {
       container.innerHTML = '<p class="board-loading">加载失败，请刷新页面重试。</p>'
     }
+  }
+
+  function buildMessageNode(
+    msg: any,
+    template: HTMLTemplateElement,
+    childMessages: any[]
+  ): HTMLElement {
+    const node = template.content.cloneNode(true) as DocumentFragment
+    const itemEl = node.querySelector('.board-item') as HTMLElement
+
+    const nameEl = itemEl.querySelector('.board-item-name')
+    const dateEl = itemEl.querySelector('.board-item-date')
+    const bodyEl = itemEl.querySelector('.board-item-body')
+    const repliesEl = itemEl.querySelector('.board-replies')
+
+    if (nameEl) nameEl.textContent = msg.name || 'Anonymous'
+    if (dateEl) dateEl.textContent = new Date(msg.createdAt).toLocaleDateString(
+      'zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+    if (bodyEl) bodyEl.textContent = msg.message
+
+    // Wire reply button
+    const replyBtn = itemEl.querySelector('.board-reply-btn')
+    if (replyBtn) {
+      replyBtn.addEventListener('click', () => toggleReplyForm(itemEl, msg.id))
+    }
+
+    // Render child replies
+    if (repliesEl && childMessages.length > 0) {
+      for (const child of childMessages) {
+        const childNode = buildMessageNode(child, template, [])
+        repliesEl.appendChild(childNode)
+      }
+    }
+
+    return itemEl
+  }
+
+  function toggleReplyForm(itemEl: HTMLElement, parentId: string) {
+    // Remove any existing open reply form
+    const existing = itemEl.querySelector('.reply-form-container')
+    if (existing) { existing.remove(); return }
+
+    const formTemplate = document.getElementById('reply-form-template') as HTMLTemplateElement | null
+    if (!formTemplate) return
+
+    const formNode = formTemplate.content.cloneNode(true) as DocumentFragment
+    const formContainer = formNode.querySelector('.reply-form-container') as HTMLElement
+    const form = formContainer.querySelector('.reply-form') as HTMLFormElement
+    const cancelBtn = formContainer.querySelector('.reply-cancel-btn')
+    const errorEl = formContainer.querySelector('.reply-form-error')
+
+    // Insert form before replies section
+    const repliesEl = itemEl.querySelector('.board-replies')
+    if (repliesEl) {
+      itemEl.insertBefore(formContainer, repliesEl)
+    } else {
+      itemEl.appendChild(formContainer)
+    }
+
+    cancelBtn?.addEventListener('click', () => formContainer.remove())
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const submitBtn = form.querySelector('.reply-submit-btn') as HTMLButtonElement | null
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '...' }
+
+      const data = new FormData(form)
+      const name = (data.get('reply-name') as string || '').trim() || 'Anonymous'
+      const message = (data.get('reply-message') as string || '').trim()
+
+      if (!message) {
+        if (errorEl) { errorEl.textContent = '请输入回复内容'; errorEl.classList.remove('hidden') }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '回复' }
+        return
+      }
+
+      try {
+        const res = await fetch('/api/message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, message, parentId, type: 'comment', public: true }),
+        })
+        if (res.ok) {
+          await loadMessages()
+        } else {
+          if (errorEl) { errorEl.textContent = '发送失败，请重试'; errorEl.classList.remove('hidden') }
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '回复' }
+        }
+      } catch {
+        if (errorEl) { errorEl.textContent = '网络错误，请稍后重试'; errorEl.classList.remove('hidden') }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '回复' }
+      }
+    })
   }
 
   loadMessages()

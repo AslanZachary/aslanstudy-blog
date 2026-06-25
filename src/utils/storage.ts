@@ -16,6 +16,7 @@ interface Message {
   message: string
   createdAt: string
   public: boolean
+  parentId?: string
 }
 
 function uid(): string {
@@ -48,10 +49,26 @@ export async function getMessages(): Promise<Message[]> {
   return memoryStore.messages as Message[]
 }
 
+function collectDescendantIds(all: Message[], rootId: string): Set<string> {
+  const ids = new Set<string>([rootId])
+  let added = true
+  while (added) {
+    added = false
+    for (const m of all) {
+      if (m.parentId && ids.has(m.parentId) && !ids.has(m.id)) {
+        ids.add(m.id)
+        added = true
+      }
+    }
+  }
+  return ids
+}
+
 export async function deleteMessage(id: string): Promise<boolean> {
   if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
     const all = await kvGetAll<Message>('messages')
-    const filtered = all.filter(m => m.id !== id)
+    const toDelete = collectDescendantIds(all, id)
+    const filtered = all.filter(m => !toDelete.has(m.id))
     if (filtered.length === all.length) return false
     await fetch(`${import.meta.env.KV_REST_API_URL}/set/messages`, {
       method: 'POST',
@@ -63,10 +80,11 @@ export async function deleteMessage(id: string): Promise<boolean> {
     })
     return true
   }
-  const idx = memoryStore.messages.findIndex((m: any) => m.id === id)
-  if (idx === -1) return false
-  memoryStore.messages.splice(idx, 1)
-  return true
+  const toDelete = collectDescendantIds(memoryStore.messages as Message[], id)
+  if (toDelete.size === 0) return false
+  const prevLen = memoryStore.messages.length
+  memoryStore.messages = memoryStore.messages.filter((m: any) => !toDelete.has(m.id))
+  return memoryStore.messages.length < prevLen
 }
 
 export async function addSubscriber(email: string): Promise<Subscriber> {

@@ -187,6 +187,16 @@ import LayoutDefault from '~/layouts/LayoutDefault.astro'
     color: #d97706;
   }
 
+  .admin-badge-reply {
+    background: #3b82f620;
+    color: #2563eb;
+    margin-left: .35rem;
+    font-size: .65rem;
+    padding: .15rem .45rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
   .admin-item-date {
     font-size: .7rem;
     opacity: .4;
@@ -255,7 +265,10 @@ import LayoutDefault from '~/layouts/LayoutDefault.astro'
       container.innerHTML = messages.map((msg: any) => `
         <div class="admin-item" id="msg-${msg.id}">
           <div class="admin-item-header">
-            <span class="admin-item-name">${escapeHtml(msg.name || 'Anonymous')}</span>
+            <span class="admin-item-name">
+              ${escapeHtml(msg.name || 'Anonymous')}
+              ${msg.parentId ? '<span class="admin-badge admin-badge-reply">回复</span>' : ''}
+            </span>
             <div class="admin-item-meta">
               <span class="admin-badge ${msg.public ? 'admin-badge-public' : 'admin-badge-private'}">
                 ${msg.public ? '公开' : '私密'}
@@ -264,6 +277,7 @@ import LayoutDefault from '~/layouts/LayoutDefault.astro'
             </div>
           </div>
           ${msg.contact ? `<div class="admin-item-contact">📧 ${escapeHtml(msg.contact)}</div>` : ''}
+          ${msg.parentId ? `<div class="admin-item-contact">↳ 回复: ${escapeHtml(msg.parentId)}</div>` : ''}
           <p class="admin-item-body">${escapeHtml(msg.message)}</p>
           <button class="admin-delete-btn" onclick="deleteMsg('${msg.id}')">删除</button>
         </div>
@@ -280,7 +294,7 @@ import LayoutDefault from '~/layouts/LayoutDefault.astro'
   }
 
   async function deleteMsg(id: string) {
-    if (!confirm('确定删除这条留言吗？此操作不可撤销。')) return
+    if (!confirm('确定删除这条留言吗？所有回复也将被删除。此操作不可撤销。')) return
 
     const btn = document.querySelector(`#msg-${id} .admin-delete-btn`) as HTMLButtonElement | null
     if (btn) btn.disabled = true

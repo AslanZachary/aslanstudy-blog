@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ request }) => {
     const publicMessages = all
       .filter(m => m.public === true)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .map(({ id, name, message, createdAt }) => ({ id, name, message, createdAt }))
+      .map(({ id, name, message, createdAt, parentId }) => ({ id, name, message, createdAt, parentId }))
 
     return new Response(JSON.stringify(publicMessages), {
       status: 200,
@@ -79,12 +79,13 @@ export const DELETE: APIRoute = async ({ request }) => {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json()
-    const { name, contact, message, type, public: isPublic } = body as {
+    const { name, contact, message, type, public: isPublic, parentId } = body as {
       name?: string
       contact?: string
       message?: string
       type?: string
       public?: boolean
+      parentId?: string
     }
 
     if (!message || message.trim().length === 0) {
@@ -100,6 +101,7 @@ export const POST: APIRoute = async ({ request }) => {
       contact: contact || '',
       message: message.trim(),
       public: isPublic === true,
+      parentId: parentId || undefined,
     })
 
     return new Response(JSON.stringify({ success: true, id: msg.id, public: msg.public }), {
