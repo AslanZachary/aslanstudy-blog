@@ -2,6 +2,8 @@
 import LayoutDefault from '~/layouts/LayoutDefault.astro'
 import { themeConfig } from '~/.config'
 
+export const prerender = true
+
 const feedUrl = `${themeConfig.site.website}/atom.xml`
 const feedUrlEncoded = encodeURIComponent(feedUrl)
 
