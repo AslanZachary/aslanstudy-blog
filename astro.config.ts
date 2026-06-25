@@ -1,6 +1,7 @@
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
 import swup from '@swup/astro'
+import vercel from '@astrojs/vercel'
 import robotsTxt from 'astro-robots-txt'
 import { defineConfig } from 'astro/config'
 import rehypeKatex from 'rehype-katex'
@@ -14,6 +15,8 @@ export default defineConfig({
   site: themeConfig.site.website,
   prefetch: true,
   base: '/',
+  output: 'server',
+  adapter: vercel(),
   vite: {
     plugins: [
       // eslint-disable-next-line ts/ban-ts-comment
