@@ -6,6 +6,8 @@ import LayoutDefault from '~/layouts/LayoutDefault.astro'
 import LayoutPost from '~/layouts/LayoutPost.astro'
 import { getPostDescription, getPosts } from '~/utils'
 
+export const prerender = true
+
 const { translate: t } = Astro.locals
 
 export const getStaticPaths = (async ({ paginate }) => {

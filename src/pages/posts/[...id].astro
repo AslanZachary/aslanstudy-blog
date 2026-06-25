@@ -8,6 +8,8 @@ import LayoutPost from '~/layouts/LayoutPost.astro'
 import { getPosts } from '~/utils'
 import { render } from 'astro:content'
 
+export const prerender = true
+
 export const getStaticPaths = (async () => {
   const posts = await getPosts()
   return posts.map((post, idx) => {
