@@ -29,5 +29,6 @@ Markdown style guide.md
 /public/resources/books/*
 /public/resources/audio/*
 /public/resources/video/*
+!/public/resources/video/*.txt
 !/public/resources/*/.gitkeep
 !/public/resources/.gitkeep
