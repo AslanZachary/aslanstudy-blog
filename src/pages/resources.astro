@@ -1,0 +1,209 @@
+---
+import LayoutDefault from '~/layouts/LayoutDefault.astro'
+import { resources, categoryMeta, fileTypeIcon } from '~/data/resources'
+import type { Resource } from '~/data/resources'
+
+const { translate: t } = Astro.locals
+
+// Group resources by category
+const grouped = new Map<string, Resource[]>()
+for (const r of resources) {
+  const list = grouped.get(r.category) ?? []
+  list.push(r)
+  grouped.set(r.category, list)
+}
+
+const categoryOrder: Resource['category'][] = ['books', 'audio', 'video']
+---
+
+<LayoutDefault>
+  <div flex="~ col gap-6">
+    <header flex="~ col gap-1">
+      <h1 class="post-title">{t('Resources')}</h1>
+      <p class="text-3.5" style="opacity:0.55;">{t('resources_desc')}</p>
+    </header>
+
+    {
+      resources.length === 0 ? (
+        <div class="empty-state">
+          <span class="i-mdi-folder-open-outline empty-icon"></span>
+          <p>{t('no_resources')}</p>
+        </div>
+      ) : (
+        categoryOrder.map((cat) => {
+          const items = grouped.get(cat)
+          if (!items || items.length === 0) return null
+          const meta = categoryMeta[cat]
+          return (
+            <section flex="~ col gap-3">
+              <h2 class="category-heading">
+                <span class:list={[meta.icon, 'w-5 h-5 category-icon']}></span>
+                {meta.label}
+              </h2>
+              <div class="resource-grid">
+                {items.map((res) => (
+                  <a
+                    href={`/resources/${meta.dir}/${res.filename}`}
+                    class="resource-card"
+                    download
+                  >
+                    <div class="card-top">
+                      <span class:list={[fileTypeIcon[res.filetype] ?? fileTypeIcon.other, 'w-6 h-6 file-icon']}></span>
+                      <div class="card-meta">
+                        <span class="filetype-badge">{res.filetype}</span>
+                        {res.size && <span class="filesize">{res.size}</span>}
+                      </div>
+                    </div>
+                    <h3 class="card-title">{res.title}</h3>
+                    {res.description && <p class="card-desc">{res.description}</p>}
+                    <div class="card-bottom">
+                      {res.date && <span class="card-date">{res.date}</span>}
+                      <span class="download-btn">
+                        <span class="i-mdi-download w-4 h-4"></span>
+                        {t('download')}
+                      </span>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )
+        })
+      )
+    }
+  </div>
+</LayoutDefault>
+
+<style>
+  .empty-state {
+    text-align: center;
+    padding: 4rem 1rem;
+    opacity: .45;
+  }
+  .empty-icon {
+    font-size: 3rem;
+    display: block;
+    margin: 0 auto .75rem;
+  }
+
+  .category-heading {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 10%, transparent);
+    color: var(--color-primary, #2e405b);
+  }
+  .category-icon {
+    opacity: .7;
+  }
+
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: .85rem;
+  }
+
+  .resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+    border-radius: .6rem;
+    text-decoration: none;
+    color: var(--color-primary, #2e405b);
+    transition: border-color .18s, box-shadow .18s;
+    background: var(--color-background, #fff);
+  }
+  .resource-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary, #2e405b) 30%, transparent);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--color-primary, #2e405b) 6%, transparent);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+  .file-icon {
+    opacity: .65;
+    flex-shrink: 0;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .filetype-badge {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: .1rem .4rem;
+    border-radius: .25rem;
+    background: color-mix(in srgb, var(--color-primary, #2e405b) 8%, transparent);
+    opacity: .7;
+  }
+  .filesize {
+    font-size: .75rem;
+    opacity: .45;
+  }
+
+  .card-title {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+    /* Clamp to 2 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-desc {
+    font-size: .8rem;
+    opacity: .55;
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: .35rem;
+  }
+  .card-date {
+    font-size: .75rem;
+    opacity: .35;
+  }
+  .download-btn {
+    font-size: .78rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    opacity: .55;
+    transition: opacity .15s;
+  }
+  .resource-card:hover .download-btn {
+    opacity: .85;
+  }
+
+  @media (max-width: 600px) {
+    .resource-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

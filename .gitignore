@@ -24,3 +24,10 @@ Markdown style guide.md
 .vercel/
 .vercel
 .env*
+
+# Resource files (large binaries — keep directory structure)
+/public/resources/books/*
+/public/resources/audio/*
+/public/resources/video/*
+!/public/resources/*/.gitkeep
+!/public/resources/.gitkeep
