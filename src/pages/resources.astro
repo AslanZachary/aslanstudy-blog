@@ -43,7 +43,7 @@ const categoryOrder: Resource['category'][] = ['books', 'audio', 'video']
               <div class="resource-grid">
                 {items.map((res) => (
                   <a
-                    href={`/resources/${meta.dir}/${res.filename}`}
+                    href={res.url ?? `/resources/${meta.dir}/${res.filename}`}
                     class="resource-card"
                     download
                   >
