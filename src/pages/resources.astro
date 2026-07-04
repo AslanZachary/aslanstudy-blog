@@ -45,7 +45,8 @@ const categoryOrder: Resource['category'][] = ['books', 'audio', 'video']
                   <a
                     href={res.url ?? `/resources/${meta.dir}/${res.filename}`}
                     class="resource-card"
-                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     <div class="card-top">
                       <span class:list={[fileTypeIcon[res.filetype] ?? fileTypeIcon.other, 'w-6 h-6 file-icon']}></span>
