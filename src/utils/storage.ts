@@ -1,7 +1,9 @@
 /**
- * Simple storage utility.
- * Uses Vercel KV in production, JSON file for local development.
+ * Storage utility using Vercel Blob.
+ * Messages and subscribers are persisted as JSON files in Blob storage.
  */
+
+import { put, list, del } from '@vercel/blob'
 
 interface Subscriber {
   email: string
@@ -23,30 +25,39 @@ function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
-// In-memory fallback for local dev (also persisted to a temp file via process)
-const memoryStore: Record<string, any[]> = {
-  messages: [],
-  subscribers: [],
+const MESSAGES_KEY = 'data/messages.json'
+const SUBSCRIBERS_KEY = 'data/subscribers.json'
+
+async function blobGetAll<T>(key: string): Promise<T[]> {
+  try {
+    const { blobs } = await list({ prefix: key, limit: 1 })
+    const found = blobs.find(b => b.pathname === key)
+    if (!found) return []
+    const res = await fetch(found.url)
+    if (!res.ok) return []
+    return (await res.json()) as T[]
+  } catch {
+    return []
+  }
+}
+
+async function blobSetAll<T>(key: string, data: T[]): Promise<void> {
+  await put(key, JSON.stringify(data), {
+    access: 'public',
+    contentType: 'application/json',
+  })
 }
 
 export async function addMessage(data: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
   const msg: Message = { ...data, id: uid(), createdAt: new Date().toISOString() }
-
-  // Try Vercel KV first
-  if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
-    await kvPush('messages', msg)
-  } else {
-    memoryStore.messages.push(msg)
-  }
-
+  const all = await blobGetAll<Message>(MESSAGES_KEY)
+  all.push(msg)
+  await blobSetAll(MESSAGES_KEY, all)
   return msg
 }
 
 export async function getMessages(): Promise<Message[]> {
-  if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
-    return await kvGetAll<Message>('messages')
-  }
-  return memoryStore.messages as Message[]
+  return await blobGetAll<Message>(MESSAGES_KEY)
 }
 
 function collectDescendantIds(all: Message[], rootId: string): Set<string> {
@@ -65,63 +76,21 @@ function collectDescendantIds(all: Message[], rootId: string): Set<string> {
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
-  if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
-    const all = await kvGetAll<Message>('messages')
-    const toDelete = collectDescendantIds(all, id)
-    const filtered = all.filter(m => !toDelete.has(m.id))
-    if (filtered.length === all.length) return false
-    await fetch(`${import.meta.env.KV_REST_API_URL}/set/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${import.meta.env.KV_REST_API_TOKEN}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(filtered),
-    })
-    return true
-  }
-  const toDelete = collectDescendantIds(memoryStore.messages as Message[], id)
-  if (toDelete.size === 0) return false
-  const prevLen = memoryStore.messages.length
-  memoryStore.messages = memoryStore.messages.filter((m: any) => !toDelete.has(m.id))
-  return memoryStore.messages.length < prevLen
+  const all = await blobGetAll<Message>(MESSAGES_KEY)
+  const toDelete = collectDescendantIds(all, id)
+  const filtered = all.filter(m => !toDelete.has(m.id))
+  if (filtered.length === all.length) return false
+  await blobSetAll(MESSAGES_KEY, filtered)
+  return true
 }
 
 export async function addSubscriber(email: string): Promise<Subscriber> {
-  const sub: Subscriber = { email, subscribedAt: new Date().toISOString() }
-
-  // Try Vercel KV first
-  if (import.meta.env.KV_REST_API_URL && import.meta.env.KV_REST_API_TOKEN) {
-    await kvPush('subscribers', sub)
-  } else {
-    // Prevent duplicates
-    if (!memoryStore.subscribers.find((s: Subscriber) => s.email === email)) {
-      memoryStore.subscribers.push(sub)
-    }
+  const all = await blobGetAll<Subscriber>(SUBSCRIBERS_KEY)
+  if (all.find(s => s.email === email)) {
+    return { email, subscribedAt: new Date().toISOString() }
   }
-
+  const sub: Subscriber = { email, subscribedAt: new Date().toISOString() }
+  all.push(sub)
+  await blobSetAll(SUBSCRIBERS_KEY, all)
   return sub
-}
-
-// Vercel KV REST API helpers
-async function kvPush(key: string, value: any): Promise<void> {
-  const existing = await kvGetAll(key)
-  existing.push(value)
-  await fetch(`${import.meta.env.KV_REST_API_URL}/set/${key}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${import.meta.env.KV_REST_API_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(existing),
-  })
-}
-
-async function kvGetAll<T>(key: string): Promise<T[]> {
-  const res = await fetch(`${import.meta.env.KV_REST_API_URL}/get/${key}`, {
-    headers: { Authorization: `Bearer ${import.meta.env.KV_REST_API_TOKEN}` },
-  })
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data.result && JSON.parse(data.result)) || []
 }
