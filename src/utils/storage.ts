@@ -1,9 +1,12 @@
 /**
  * Storage utility using Vercel Blob.
  * Messages and subscribers are persisted as JSON files in Blob storage.
+ *
+ * The blob store public base URL (aslanstudy-blog-public-blob):
+ *   https://qstjtlhz41yvyjtz.public.blob.vercel-storage.com
  */
 
-import { put, list, del } from '@vercel/blob'
+import { put } from '@vercel/blob'
 
 interface Subscriber {
   email: string
@@ -25,15 +28,13 @@ function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
-const MESSAGES_KEY = 'data/messages.json'
-const SUBSCRIBERS_KEY = 'data/subscribers.json'
+const BLOB_BASE = 'https://qstjtlhz41yvyjtz.public.blob.vercel-storage.com'
+const MESSAGES_PATH = 'data/messages.json'
+const SUBSCRIBERS_PATH = 'data/subscribers.json'
 
-async function blobGetAll<T>(key: string): Promise<T[]> {
+async function blobGetAll<T>(path: string): Promise<T[]> {
   try {
-    const { blobs } = await list({ prefix: key, limit: 1 })
-    const found = blobs.find(b => b.pathname === key)
-    if (!found) return []
-    const res = await fetch(found.url)
+    const res = await fetch(`${BLOB_BASE}/${path}`, { cache: 'no-store' })
     if (!res.ok) return []
     return (await res.json()) as T[]
   } catch {
@@ -41,23 +42,29 @@ async function blobGetAll<T>(key: string): Promise<T[]> {
   }
 }
 
-async function blobSetAll<T>(key: string, data: T[]): Promise<void> {
-  await put(key, JSON.stringify(data), {
-    access: 'public',
-    contentType: 'application/json',
-  })
+async function blobSetAll<T>(path: string, data: T[]): Promise<void> {
+  try {
+    await put(path, JSON.stringify(data), {
+      access: 'public',
+      contentType: 'application/json',
+      addRandomSuffix: false,
+    })
+  } catch (err) {
+    console.error(`blobSetAll(${path}) failed:`, err)
+    throw err
+  }
 }
 
 export async function addMessage(data: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
   const msg: Message = { ...data, id: uid(), createdAt: new Date().toISOString() }
-  const all = await blobGetAll<Message>(MESSAGES_KEY)
+  const all = await blobGetAll<Message>(MESSAGES_PATH)
   all.push(msg)
-  await blobSetAll(MESSAGES_KEY, all)
+  await blobSetAll(MESSAGES_PATH, all)
   return msg
 }
 
 export async function getMessages(): Promise<Message[]> {
-  return await blobGetAll<Message>(MESSAGES_KEY)
+  return await blobGetAll<Message>(MESSAGES_PATH)
 }
 
 function collectDescendantIds(all: Message[], rootId: string): Set<string> {
@@ -76,21 +83,21 @@ function collectDescendantIds(all: Message[], rootId: string): Set<string> {
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
-  const all = await blobGetAll<Message>(MESSAGES_KEY)
+  const all = await blobGetAll<Message>(MESSAGES_PATH)
   const toDelete = collectDescendantIds(all, id)
   const filtered = all.filter(m => !toDelete.has(m.id))
   if (filtered.length === all.length) return false
-  await blobSetAll(MESSAGES_KEY, filtered)
+  await blobSetAll(MESSAGES_PATH, filtered)
   return true
 }
 
 export async function addSubscriber(email: string): Promise<Subscriber> {
-  const all = await blobGetAll<Subscriber>(SUBSCRIBERS_KEY)
+  const all = await blobGetAll<Subscriber>(SUBSCRIBERS_PATH)
   if (all.find(s => s.email === email)) {
     return { email, subscribedAt: new Date().toISOString() }
   }
   const sub: Subscriber = { email, subscribedAt: new Date().toISOString() }
   all.push(sub)
-  await blobSetAll(SUBSCRIBERS_KEY, all)
+  await blobSetAll(SUBSCRIBERS_PATH, all)
   return sub
 }
