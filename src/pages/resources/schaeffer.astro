@@ -1,0 +1,234 @@
+---
+import LayoutDefault from '~/layouts/LayoutDefault.astro'
+import { resources, fileTypeIcon } from '~/data/resources'
+import type { Resource } from '~/data/resources'
+
+const schaefferBooks = resources.filter(r => r.filename.startsWith('薛华全集'))
+const epubBooks = schaefferBooks.filter(r => r.filetype === 'EPUB')
+const pdfBooks = schaefferBooks.filter(r => r.filetype === 'PDF')
+---
+
+<LayoutDefault>
+  <div flex="~ col gap-8">
+    <header flex="~ col gap-2">
+      <h1 class="post-title">薛华全集</h1>
+      <p class="text-3.5" style="opacity:0.55;">
+        Francis Schaeffer Complete Works — 共 5 卷，每卷提供 EPUB 与 PDF 两种格式下载。
+      </p>
+    </header>
+
+    <!-- Section: EPUB -->
+    <section flex="~ col gap-3">
+      <h2 class="category-heading">
+        <span class="i-mdi-book-open w-5 h-5 category-icon"></span>
+        EPUB 格式
+      </h2>
+      <div class="resource-grid">
+        {epubBooks.map((res) => (
+          <a
+            href={res.url ?? `/resources/books/${res.filename}`}
+            class="resource-card"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="card-top">
+              <span class:list={[fileTypeIcon[res.filetype] ?? fileTypeIcon.other, 'w-6 h-6 file-icon']}></span>
+              <div class="card-meta">
+                <span class="filetype-badge">{res.filetype}</span>
+                {res.size && <span class="filesize">{res.size}</span>}
+              </div>
+            </div>
+            <h3 class="card-title">{res.title}</h3>
+            {res.description && <p class="card-desc">{res.description}</p>}
+            <div class="card-bottom">
+              <span></span>
+              <span class="download-btn">
+                <span class="i-mdi-download w-4 h-4"></span>
+                下载
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Section: PDF -->
+    <section flex="~ col gap-3">
+      <h2 class="category-heading">
+        <span class="i-mdi-file-pdf-box w-5 h-5 category-icon"></span>
+        PDF 格式
+      </h2>
+      <div class="resource-grid">
+        {pdfBooks.map((res) => (
+          <a
+            href={res.url ?? `/resources/books/${res.filename}`}
+            class="resource-card"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <div class="card-top">
+              <span class:list={[fileTypeIcon[res.filetype] ?? fileTypeIcon.other, 'w-6 h-6 file-icon']}></span>
+              <div class="card-meta">
+                <span class="filetype-badge">{res.filetype}</span>
+                {res.size && <span class="filesize">{res.size}</span>}
+              </div>
+            </div>
+            <h3 class="card-title">{res.title}</h3>
+            {res.description && <p class="card-desc">{res.description}</p>}
+            <div class="card-bottom">
+              <span></span>
+              <span class="download-btn">
+                <span class="i-mdi-download w-4 h-4"></span>
+                下载
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Back to Resources -->
+    <div class="back-link">
+      <a href="/resources" class="back-btn">
+        <span class="i-mdi-arrow-left w-4 h-4"></span>
+        返回资源页面
+      </a>
+    </div>
+  </div>
+</LayoutDefault>
+
+<style>
+  .category-heading {
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 10%, transparent);
+    color: var(--color-primary, #2e405b);
+  }
+  .category-icon {
+    opacity: .7;
+  }
+
+  .resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: .85rem;
+  }
+
+  .resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-primary, #2e405b) 12%, transparent);
+    border-radius: .6rem;
+    text-decoration: none;
+    color: var(--color-primary, #2e405b);
+    transition: border-color .18s, box-shadow .18s;
+    background: var(--color-background, #fff);
+  }
+  .resource-card:hover {
+    border-color: color-mix(in srgb, var(--color-primary, #2e405b) 30%, transparent);
+    box-shadow: 0 2px 12px color-mix(in srgb, var(--color-primary, #2e405b) 6%, transparent);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+  .file-icon {
+    opacity: .65;
+    flex-shrink: 0;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .filetype-badge {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: .1rem .4rem;
+    border-radius: .25rem;
+    background: color-mix(in srgb, var(--color-primary, #2e405b) 8%, transparent);
+    opacity: .7;
+  }
+  .filesize {
+    font-size: .75rem;
+    opacity: .45;
+  }
+
+  .card-title {
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-desc {
+    font-size: .8rem;
+    opacity: .55;
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: .35rem;
+  }
+  .download-btn {
+    font-size: .78rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: .2rem;
+    opacity: .55;
+    transition: opacity .15s;
+  }
+  .resource-card:hover .download-btn {
+    opacity: .85;
+  }
+
+  .back-link {
+    text-align: center;
+    padding-top: 1rem;
+  }
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    font-size: .9rem;
+    text-decoration: none;
+    color: var(--color-primary, #2e405b);
+    opacity: .6;
+    transition: opacity .15s;
+  }
+  .back-btn:hover {
+    opacity: 1;
+  }
+
+  @media (max-width: 600px) {
+    .resource-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
