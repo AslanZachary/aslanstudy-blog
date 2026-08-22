@@ -1,7 +1,10 @@
 ---
 title: "Squawk Pod：Warren Buffett 31/03/2026 （AI中文翻译）"
 pubDate: 2026-04-01
-categories: ["社会", "经济学", "转载"]
+categories:
+  - 社会
+  - 经济学
+  - 转载
 description: "以下是 2026 年 3 月 31 日《Squawk Pod》节目访谈内容的完整、精确翻译。翻译采用了金融与经济领域的专业术语，并明确区分了主持人与沃伦·巴菲特（Warren Buffett）的发言。"
 ---
 
